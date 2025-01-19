@@ -5,7 +5,7 @@ import { db } from '@/app/firebaseConfig';
 export async function POST(req) {
   try {
     console.log("function is called with the webhook")
-    const secretKey = process.env.CASHFREE_SECRET_KEY; // Set this in your .env file
+    const secretKey = process.env.CASHFREE_SECRET_KEY; 
     const body = await req.json();
     console.log("this is the content of the body")
 
