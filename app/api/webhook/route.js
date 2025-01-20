@@ -22,18 +22,20 @@ export async function POST(req) {
     // }
 
     // Extract relevant details from the webhook payload
-    const { order_id, payment_id, payment_status, payment_amount, payment_currency } = body;
+    // const { order_id, payment_id, payment_status, payment_amount, payment_currency } = body;
 
-    // Save the webhook data to Firestore
-    const docRef = doc(db, 'payments', order_id);
-    await setDoc(docRef, {
-      orderId: order_id,
-      paymentId: payment_id,
-      paymentStatus: payment_status,
-      paymentAmount: payment_amount,
-      paymentCurrency: payment_currency,
-      receivedAt: new Date().toISOString(),
-    });
+    // // Save the webhook data to Firestore
+    // const docRef = doc(db, 'payments', order_id);
+    // await setDoc(docRef, {
+    //   orderId: order_id,
+    //   paymentId: payment_id,
+    //   paymentStatus: payment_status,
+    //   paymentAmount: payment_amount,
+    //   paymentCurrency: payment_currency,
+    //   receivedAt: new Date().toISOString(),
+    // });
+
+    console.log(body)
 
     return new Response('Webhook processed successfully', { status: 200 });
   } catch (error) {
