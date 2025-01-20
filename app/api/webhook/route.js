@@ -8,62 +8,8 @@ export async function POST(req) {
     const secretKey = process.env.CASHFREE_SECRET_KEY;
     const body = await req.json();
     console.log("this is the content of the body");
-
-    //   {
-    //     "data": {
-    //         "form": {
-    //             "form_id": "my-form-1",
-    //             "cf_form_id": 2011640,
-    //             "form_url": "https://payments-test.cashfree.com/forms/webhook-trial-1",
-    //             "form_currency": "INR"
-    //         },
-    //         "order": {
-    //             "order_amount": 22,
-    //             "order_id": "CFPay_U1mgll3c0e9g_ehdcjjbtckf",
-    //             "order_status": "PAID",
-    //             "transaction_id": 1021206,
-    //             "customer_details": {
-    //                 "customer_phone": "9999999999",
-    //                 "customer_email": "mohit.jasapara@cashfree.com",
-    //                 "customer_name": "Mohit Jasapara",
-    //                 "customer_fields": [
-    //                     {
-    //                         "title": "Zoom ID",
-    //                         "value": "mohit.jasapara"
-    //                     },
-    //                     {
-    //                         "title": "Company Designation",
-    //                         "value": ""
-    //                     }
-    //                 ]
-    //             },
-    //             "amount_details": [
-    //                 {
-    //                     "title": "Webinar Tickets",
-    //                     "value": 398,
-    //                     "quantity": 2
-    //                 },
-    //                 {
-    //                     "title": "Zoom Platform Fee",
-    //                     "value": 10
-    //                 },
-    //                 {
-    //                     "title": "Buy me a coffee :)",
-    //                     "value": 0
-    //                 },
-    //                 {
-    //                     "title": "Amount Dropdown Trial",
-    //                     "value": 50,
-    //                     "selectedoption": "Option 1"
-    //                 }
-    //             ]
-    //         }
-    //     },
-    //     "event_time": "2021-04-16T14:10:36+05:30",
-    //     "type": "PAYMENT_FORM_ORDER_WEBHOOK"
-    // }
-
-    // console.log(body)
+    
+    console.log(body)
 
     // Extract relevant details from the webhook payload
     const order = body?.data?.order;
@@ -101,7 +47,7 @@ export async function POST(req) {
     // );
 
     // Save the webhook data to Firestore
-    const docRef = await doc(db, "payments", orderId);
+    const docRef = doc(db, "payments", orderId);
     await setDoc(docRef, {
       orderId,
       paymentId,
