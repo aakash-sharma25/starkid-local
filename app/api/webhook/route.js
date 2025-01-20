@@ -73,6 +73,15 @@ export async function POST(req) {
     const paymentAmount = order?.order_amount;
     const paymentCurrency = body?.data?.form?.form_currency;
 
+    
+    console.log(
+      orderId,
+      paymentAmount,
+      paymentId,
+      paymentCurrency,
+      paymentStatus
+    );
+
     if (
       !orderId ||
       !paymentId ||
@@ -83,13 +92,13 @@ export async function POST(req) {
       return new Response("Missing required fields", { status: 400 });
     }
 
-    console.log(
-      orderId,
-      paymentAmount,
-      paymentId,
-      paymentCurrency,
-      paymentStatus
-    );
+    // console.log(
+    //   orderId,
+    //   paymentAmount,
+    //   paymentId,
+    //   paymentCurrency,
+    //   paymentStatus
+    // );
 
     // Save the webhook data to Firestore
     const docRef = await doc(db, "payments", orderId);
