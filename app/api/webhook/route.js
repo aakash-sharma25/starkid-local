@@ -8,8 +8,8 @@ export async function POST(req) {
     const secretKey = process.env.CASHFREE_SECRET_KEY;
     const body = await req.json();
     console.log("this is the content of the body");
-    
-    console.log(body)
+
+    console.log(body);
 
     // Extract relevant details from the webhook payload
     const order = body?.data?.order;
@@ -17,16 +17,12 @@ export async function POST(req) {
     const paymentId = order?.transaction_id;
     const paymentStatus = order?.order_status;
     const paymentAmount = order?.order_amount;
+    const name = order?.customer_details?.customer_name;
+    const email = order?.customer_details?.customer_email;
+    const phone = order?.customer_details?.customer_phone;
     const paymentCurrency = body?.data?.form?.form_currency;
 
-    
-    console.log(
-      orderId,
-      paymentAmount,
-      paymentId,
-      paymentCurrency,
-      paymentStatus
-    );
+    console.log(name, email, phone, paymentAmount, paymentStatus);
 
     if (
       !orderId ||
@@ -90,3 +86,24 @@ export async function POST(req) {
     return new Response("Internal Server Error", { status: 500 });
   }
 }
+
+// {
+//   data: {
+//     form: {
+//       cf_form_id: 6303131,
+//       form_id: null,
+//       form_url: 'https://payments-test.cashfree.com/forms/starkid',
+//       form_currency: 'INR'
+//     },
+//     order: {
+//       order_id: 'CFPay_starkid_4l7jnvh3f',
+//       order_amount: '10.00',
+//       transaction_id: 5114915808609,
+//       order_status: 'PAID',
+//       customer_details: [Object],
+//       amount_details: [Array]
+//     }
+//   },
+//   type: 'PAYMENT_FORM_ORDER_WEBHOOK',
+//   event_time: '2025-01-21T15:14:44+05:30'
+// }
