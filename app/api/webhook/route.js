@@ -42,7 +42,7 @@ export async function POST(req) {
     //   paymentStatus
     // );
 
-    const docRef = doc(db, "payments", orderId);
+    const docRef = doc(db, "payments", phone);
     await setDoc(docRef, {
       orderId,
       paymentId,
