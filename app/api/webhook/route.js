@@ -42,7 +42,6 @@ export async function POST(req) {
     //   paymentStatus
     // );
 
-    // Save the webhook data to Firestore
     const docRef = doc(db, "payments", orderId);
     await setDoc(docRef, {
       orderId,
@@ -50,6 +49,9 @@ export async function POST(req) {
       paymentStatus,
       paymentAmount,
       paymentCurrency,
+      name,
+      email,
+      phone,
       receivedAt: new Date().toISOString(),
     });
 
