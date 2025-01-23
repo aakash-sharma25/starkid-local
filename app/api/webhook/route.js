@@ -37,9 +37,7 @@ async function checkPhoneExists(phoneNumber, childData) {
       return false;
     }
 
-    // Phone number exists, retrieve the parent ID
-
-    console.log("phone no exist creating new userId");
+    console.log("phone no exist creating new userId by retriving parent Id");
 
     const parentContactDoc = querySnapshot.docs[0];
     const parentId = parentContactDoc.ref.parent.parent.id;
