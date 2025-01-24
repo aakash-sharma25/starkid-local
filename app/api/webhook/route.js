@@ -14,12 +14,22 @@ import { db } from "@/app/firebaseConfig";
 import { NextResponse } from "next/server";
 
 function getClassFromAge(age) {
+  
+  age = Number(age);
+
+  if (isNaN(age)) {
+    throw new Error(`Invalid age: ${age}. Age must be a valid number.`);
+  }
+
+  age = Math.round(age);
+
   if (age >= 3 && age <= 8) return 3;
   if (age === 9) return 4;
   if (age === 10) return 5;
   if (age === 11) return 6;
   if (age === 12) return 7;
   if (age >= 13) return 8;
+
   throw new Error(`Invalid age: ${age}`);
 }
 
