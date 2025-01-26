@@ -2,19 +2,17 @@ import {
   collection,
   collectionGroup,
   doc,
-  getDoc,
   getDocs,
   query,
   setDoc,
   Timestamp,
   where,
 } from "firebase/firestore";
-import crypto from "crypto";
 import { db } from "@/app/firebaseConfig";
 import { NextResponse } from "next/server";
+import { retryOperation } from "@/utils/retryHandler";
 
 function getClassFromAge(age) {
-  
   age = Number(age);
 
   if (isNaN(age)) {
@@ -33,130 +31,154 @@ function getClassFromAge(age) {
   throw new Error(`Invalid age: ${age}`);
 }
 
-async function checkPhoneExists(phoneNumber, childData) {
-  try {
-    const querySnapshot = await getDocs(
-      query(
-        collectionGroup(db, "parentContacts"),
-        where("parentContact", "==", phoneNumber)
-      )
-    );
+async function checkPhoneExists(phoneNumber) {
+  const querySnapshot = await getDocs(
+    query(
+      collectionGroup(db, "parentContacts"),
+      where("parentContact", "==", phoneNumber)
+    )
+  );
 
-    if (querySnapshot.empty) {
-      console.log("Phone number does not exist");
-      return false;
+  if (querySnapshot.empty) {
+    return { exists: false, parentId: null };
+  }
+
+  const parentContactDoc = querySnapshot.docs[0];
+  const parentId = parentContactDoc.ref.parent.parent.id;
+  return { exists: true, parentId };
+}
+
+async function createNewParent(phone, studentDetail) {
+  const parentId = doc(collection(db, "Parents")).id;
+  const parentRef = doc(db, "Parents", parentId);
+
+  await setDoc(parentRef, {
+    isManualPaidUser: true,
+    manualExpirationDate: Timestamp.fromDate(new Date("2025-02-14")),
+  });
+
+  // Save parent contact under parentContacts subcollection
+  const parentContactRef = doc(
+    collection(db, `Parents/${parentId}/parentContacts`),
+    phone
+  );
+  await setDoc(parentContactRef, {
+    parentContact: phone,
+    parentName: "Default",
+    parentRelation: "None",
+  });
+
+  // Save student detail under userIds subcollection
+  const userId = doc(collection(db, `Parents/${parentId}/UserIds`)).id;
+  const userRef = doc(db, `Parents/${parentId}/UserIds/${userId}`);
+  await setDoc(userRef, studentDetail);
+
+  return parentId;
+}
+
+async function createNewUserForExistingParent(parentId, studentDetail) {
+  try {
+    const userIdsRef = collection(db, `Parents/${parentId}/UserIds`);
+    const existingUsersQuery = query(
+      userIdsRef,
+      where("userName", "==", studentDetail.userName),
+      where("class", "==", studentDetail.class)
+    );
+    const querySnapshot = await getDocs(existingUsersQuery);
+
+    if (!querySnapshot.empty) {
+      console.log(
+        "Duplicate payment detected for user:",
+        querySnapshot.docs[0].data()
+      );
+      return {
+        success: false,
+        message: "Duplicate payment detected. User already exists.",
+        existingUser: querySnapshot.docs[0].data(),
+      };
     }
 
-    console.log("phone no exist creating new userId by retriving parent Id");
-
-    const parentContactDoc = querySnapshot.docs[0];
-    const parentId = parentContactDoc.ref.parent.parent.id;
-
-    // console.log("Parent ID:", parentId);
-
-    const userRef = doc(collection(db, `Parents/${parentId}/userIds`));
-    const userId = userRef.id;
-
-    const newUser = {
-      userName: childData?.userName || "Unknown Name",
-      class: childData?.class || 0,
-      gender: childData?.gender || "none",
-      schoolId: childData?.schoolId || "/Schools/defaultSchoolId",
+    // If no duplicates are found, create a new user
+    const userRef = doc(userIdsRef);
+    await setDoc(userRef, studentDetail);
+    return {
+      success: true,
+      message: "User added successfully.",
+      userId: userRef.id,
     };
-
-    // Save the new user data
-
-    await setDoc(userRef, newUser);
-
-    console.log("User added successfully with userId:", userId);
-    return true;
   } catch (error) {
-    console.error("Error handling phone number:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "An error occurred",
-        error,
-      },
-      { status: 500 }
-    );
+    console.error("Error creating new user:", error);
+    throw error;
   }
 }
 
 export async function POST(req) {
   try {
-    const secretKey = process.env.CASHFREE_SECRET_KEY;
-
     const body = await req.json();
 
     const order = body?.data?.order;
     const paymentStatus = order?.order_status;
-    const childName = order?.customer_details?.customer_fields[1]?.value;
-    const age = order?.customer_details?.customer_fields[2]?.value;
+    // const childName = order?.customer_details?.customer_fields[1]?.value;
+    // const age = order?.customer_details?.customer_fields[2]?.value;
     const phone = order?.customer_details?.customer_phone;
 
-    console.log(childName, phone, age, paymentStatus);
+    const customerField = order?.customer_details?.customer_fields;
+
+    const childName = customerField?.find(
+      (field) => field.title === "Name of your child"
+    )?.value;
+    const age = customerField?.find(
+      (field) => field.title === "Age of your child"
+    )?.value;
 
     if (!paymentStatus || !childName || !age || !phone) {
       return new Response("Missing required fields", { status: 400 });
     }
 
-    const parentContacts = {
-      parentContact: phone,
-      parentName: "Default",
-      parentRelation: "None",
-    };
-
     const studentDetail = {
+      userName: childName,
       class: getClassFromAge(age),
       gender: "none",
-      schoolId: "/Schools/hc3ED2P35H7SABAonaV7", // remaining to implement
-      userName: childName,
+      schoolId: doc(db, "Schools", "hc3ED2P35H7SABAonaV7"), // schoolId: "/Schools/hc3ED2P35H7SABAonaV7", // doc(db, "Schools", "hc3ED2P35H7SABAonaV7"),
     };
 
-    const phoneExist = await checkPhoneExists(phone, studentDetail);
+    // Check if phone exists in the database
+    // const { exists, parentId } = await checkPhoneExists(phone);
+    const { exists, parentId } = await retryOperation(() =>
+      checkPhoneExists(phone, studentDetail)
+    );
 
-    if (phoneExist) {
-      console.log("in true block");
+    if (exists) {
+      // const userId = await createNewUserForExistingParent(
+      //   parentId,
+      //   studentDetail
+      // );
+      const userId = await retryOperation(() =>
+        createNewUserForExistingParent(parentId, studentDetail)
+      );
       return NextResponse.json(
         {
-          message: "Created another userId",
-          status: true,
+          message: "Phone exists. New user added successfully.",
+          userId,
+          parentId,
         },
         { status: 200 }
       );
     } else {
-      console.log("Phone Doesnt exist");
-
-      const parentId = doc(collection(db, "Parents")).id;
-
-      const parentRef = doc(db, "Parents", parentId);
-
-      await setDoc(parentRef, {
-        isManualPaidUser: true,
-        manualExpirationDate: Timestamp.fromDate(new Date("2025-02-14")),
-      });
-
-      const parentContactRef = doc(
-        collection(db, `Parents/${parentId}/parentContacts`),
-        parentContacts.parentContact
+      // Create a new parent and user
+      // const newParentId = await createNewParent(phone, studentDetail);
+      const newParentId = await retryOperation(() =>
+        createNewParent(phone, studentDetail)
       );
-
-      await setDoc(parentContactRef, parentContacts);
-      const userId = doc(collection(db, `Parents/${parentId}/userIds`)).id;
-      const userRef = doc(db, `Parents/${parentId}/userIds/${userId}`);
-      await setDoc(userRef, studentDetail);
+      return NextResponse.json(
+        {
+          message:
+            "Phone does not exist. New parent and user created successfully.",
+          parentId: newParentId,
+        },
+        { status: 200 }
+      );
     }
-
-    return NextResponse.json(
-      {
-        message:
-          "Webhook processed successfully, entry to database is successful",
-      },
-      {
-        status: 200,
-      }
-    );
   } catch (error) {
     console.error("Error processing webhook:", error);
     return new Response("Internal Server Error", { status: 500 });
