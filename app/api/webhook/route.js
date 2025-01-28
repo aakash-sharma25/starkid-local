@@ -10,7 +10,10 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/firebaseConfig";
 import { NextResponse } from "next/server";
-import { retryOperation } from "@/utils/retryHandler";
+import { retryOperation } from "@/utlis/retryHandler";
+import { sendEmail } from "@/utlis/email";
+
+// const result = await sendEmail(data, "registration");
 
 function getClassFromAge(age) {
   age = Number(age);
@@ -73,7 +76,7 @@ async function createNewParent(phone, studentDetail) {
   const userRef = doc(db, `Parents/${parentId}/UserIds/${userId}`);
   await setDoc(userRef, studentDetail);
 
-  return parentId;
+  return { parentId, userId };
 }
 
 async function createNewUserForExistingParent(parentId, studentDetail) {
@@ -91,6 +94,15 @@ async function createNewUserForExistingParent(parentId, studentDetail) {
         "Duplicate payment detected for user:",
         querySnapshot.docs[0].data()
       );
+
+      let data = {
+        parentId: parentId,
+        UserId: studentDetail.userName,
+        message: "A duplicate Entry is done for the above parent Id",
+        status: "Already Done",
+      };
+
+      await retryOperation(() => sendEmail(data, "registrationFaliure"));
       return {
         success: false,
         message: "Duplicate payment detected. User already exists.",
@@ -101,6 +113,13 @@ async function createNewUserForExistingParent(parentId, studentDetail) {
     // If no duplicates are found, create a new user
     const userRef = doc(userIdsRef);
     await setDoc(userRef, studentDetail);
+    let data = {
+      parentId: parentId,
+      userId: userRef.id,
+      status: "success",
+    };
+
+    await retryOperation(() => sendEmail(data, "registrationSuccess"));
     return {
       success: true,
       message: "User added successfully.",
@@ -118,8 +137,6 @@ export async function POST(req) {
 
     const order = body?.data?.order;
     const paymentStatus = order?.order_status;
-    // const childName = order?.customer_details?.customer_fields[1]?.value;
-    // const age = order?.customer_details?.customer_fields[2]?.value;
     const phone = order?.customer_details?.customer_phone;
 
     const customerField = order?.customer_details?.customer_fields;
@@ -139,23 +156,26 @@ export async function POST(req) {
       userName: childName,
       class: getClassFromAge(age),
       gender: "none",
-      schoolId: doc(db, "Schools", "hc3ED2P35H7SABAonaV7"), // schoolId: "/Schools/hc3ED2P35H7SABAonaV7", // doc(db, "Schools", "hc3ED2P35H7SABAonaV7"),
+      schoolId: doc(db, "Schools", "hc3ED2P35H7SABAonaV7"),
     };
 
-    // Check if phone exists in the database
-    // const { exists, parentId } = await checkPhoneExists(phone);
     const { exists, parentId } = await retryOperation(() =>
       checkPhoneExists(phone, studentDetail)
     );
 
     if (exists) {
-      // const userId = await createNewUserForExistingParent(
-      //   parentId,
-      //   studentDetail
-      // );
       const userId = await retryOperation(() =>
         createNewUserForExistingParent(parentId, studentDetail)
       );
+
+      // let data = {
+      //   parentId: parentId,
+      //   userId: userId,
+      //   status: "success",
+      // };
+
+      // await retryOperation(() => sendEmail(data, "registrationSuccess"));
+
       return NextResponse.json(
         {
           message: "Phone exists. New user added successfully.",
@@ -167,20 +187,35 @@ export async function POST(req) {
     } else {
       // Create a new parent and user
       // const newParentId = await createNewParent(phone, studentDetail);
-      const newParentId = await retryOperation(() =>
+      const { parentId, userId } = await retryOperation(() =>
         createNewParent(phone, studentDetail)
       );
+      let data = {
+        parentId: parentId,
+        userId: userId,
+        status: "success",
+      };
+
+      await retryOperation(() => sendEmail(data, "registrationSuccess"));
+
       return NextResponse.json(
         {
           message:
             "Phone does not exist. New parent and user created successfully.",
-          parentId: newParentId,
+          parentId: parentId,
         },
         { status: 200 }
       );
     }
   } catch (error) {
     console.error("Error processing webhook:", error);
+
+    let data = {
+      status: "false",
+      message: error,
+    };
+    await retryOperation(() => sendEmail(data, "registrationFaliure"));
+
     return new Response("Internal Server Error", { status: 500 });
   }
 }

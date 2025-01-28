@@ -10,7 +10,7 @@ export async function retryOperation(operation, retries = 2, delay = 1000) {
           throw error; 
         }
         console.error(`Retry attempt ${attempt} failed. Retrying in ${delay}ms...`, error);
-        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
+        await new Promise((resolve) => setTimeout(resolve, delay)); 
       }
     }
   }
