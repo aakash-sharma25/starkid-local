@@ -132,101 +132,108 @@ async function createNewUserForExistingParent(parentId, studentDetail) {
 }
 
 export async function POST(req) {
-  try {
-    const body = await req.json();
+  console.log("this funtion is called");
+  return NextResponse.json(
+    {
+      message: "success",
+    },
+    { status: 200 }
+  );
+  // try {
+  //   const body = await req.json();
 
-    const order = body?.data?.order;
-    const paymentStatus = order?.order_status;
-    const phone = order?.customer_details?.customer_phone;
+  //   const order = body?.data?.order;
+  //   const paymentStatus = order?.order_status;
+  //   const phone = order?.customer_details?.customer_phone;
 
-    const customerField = order?.customer_details?.customer_fields;
+  //   const customerField = order?.customer_details?.customer_fields;
 
-    const childName = customerField?.find(
-      (field) => field.title === "Name of your child"
-    )?.value;
-    const age = customerField?.find(
-      (field) => field.title === "Age of your child"
-    )?.value;
+  //   const childName = customerField?.find(
+  //     (field) => field.title === "Name of your child"
+  //   )?.value;
+  //   const age = customerField?.find(
+  //     (field) => field.title === "Age of your child"
+  //   )?.value;
 
-    if (!paymentStatus || !childName || !age || !phone) {
-      return new Response("Missing required fields", { status: 400 });
-    }
+  //   if (!paymentStatus || !childName || !age || !phone) {
+  //     return new Response("Missing required fields", { status: 400 });
+  //   }
 
-    // await sendSms(phone);
+  //   // await sendSms(phone);
 
-    // return NextResponse.json(
-    //   {
-    //     message: "true",
-    //   },
-    //   { status: 200 }
-    // );
+  //   // return NextResponse.json(
+  //   //   {
+  //   //     message: "true",
+  //   //   },
+  //   //   { status: 200 }
+  //   // );
 
-    const studentDetail = {
-      userName: childName,
-      class: getClassFromAge(age),
-      gender: "none",
-      schoolId: doc(db, "Schools", "hc3ED2P35H7SABAonaV7"),
-    };
+  //   const studentDetail = {
+  //     userName: childName,
+  //     class: getClassFromAge(age),
+  //     gender: "none",
+  //     schoolId: doc(db, "Schools", "hc3ED2P35H7SABAonaV7"),
+  //   };
 
-    const { exists, parentId } = await retryOperation(() =>
-      checkPhoneExists(phone, studentDetail)
-    );
+  //   const { exists, parentId } = await retryOperation(() =>
+  //     checkPhoneExists(phone, studentDetail)
+  //   );
 
-    if (exists) {
-      const userId = await retryOperation(() =>
-        createNewUserForExistingParent(parentId, studentDetail)
-      );
+  //   if (exists) {
+  //     const userId = await retryOperation(() =>
+  //       createNewUserForExistingParent(parentId, studentDetail)
+  //     );
 
-      // let data = {
-      //   parentId: parentId,
-      //   userId: userId,
-      //   status: "success",
-      // };
+  //     // let data = {
+  //     //   parentId: parentId,
+  //     //   userId: userId,
+  //     //   status: "success",
+  //     // };
 
-      // await retryOperation(() => sendEmail(data, "registrationSuccess"));
+  //     // await retryOperation(() => sendEmail(data, "registrationSuccess"));
 
-      return NextResponse.json(
-        {
-          message: "Phone exists. New user added successfully.",
-          userId,
-          parentId,
-        },
-        { status: 200 }
-      );
-    } else {
-      // Create a new parent and user
-      // const newParentId = await createNewParent(phone, studentDetail);
-      const { parentId, userId } = await retryOperation(() =>
-        createNewParent(phone, studentDetail)
-      );
-      let data = {
-        parentId: parentId,
-        userId: userId,
-        status: "success",
-      };
+  //     return NextResponse.json(
+  //       {
+  //         message: "Phone exists. New user added successfully.",
+  //         userId,
+  //         parentId,
+  //       },
+  //       { status: 200 }
+  //     );
+  //   } else {
+  //     // Create a new parent and user
+  //     // const newParentId = await createNewParent(phone, studentDetail);
+  //     const { parentId, userId } = await retryOperation(() =>
+  //       createNewParent(phone, studentDetail)
+  //     );
+  //     let data = {
+  //       parentId: parentId,
+  //       userId: userId,
+  //       status: "success",
+  //     };
 
-      await retryOperation(() => sendEmail(data, "registrationSuccess"));
+  //     await retryOperation(() => sendEmail(data, "registrationSuccess"));
 
-      return NextResponse.json(
-        {
-          message:
-            "Phone does not exist. New parent and user created successfully.",
-          parentId: parentId,
-        },
-        { status: 200 }
-      );
-    }
-  } catch (error) {
-    console.error("Error processing webhook:", error);
+  //     return NextResponse.json(
+  //       {
+  //         message:
+  //           "Phone does not exist. New parent and user created successfully.",
+  //         parentId: parentId,
+  //       },
+  //       { status: 200 }
+  //     );
+  //   }
+  // } catch (error) {
+  //   console.error("Error processing webhook:", error);
 
-    let data = {
-      status: "false",
-      message: error,
-    };
-    await retryOperation(() => sendEmail(data, "registrationFaliure"));
+  //   let data = {
+  //     status: "false",
+  //     message: error,
+  //   };
+  //   await retryOperation(() => sendEmail(data, "registrationFaliure"));
 
-    return new Response("Internal Server Error", { status: 500 });
-  }
+  //   return new Response("Internal Server Error", { status: 500 });
+  // }
 }
 
 // async function sendSms(phone) {
