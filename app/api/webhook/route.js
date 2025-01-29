@@ -12,6 +12,14 @@ import { db } from "@/app/firebaseConfig";
 import { NextResponse } from "next/server";
 import { retryOperation } from "@/utlis/retryHandler";
 import { sendEmail } from "@/utlis/email";
+import crypto from "crypto";
+import { buffer } from "micro";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 // const result = await sendEmail(data, "registration");
 
