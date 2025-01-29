@@ -141,7 +141,7 @@ async function createNewUserForExistingParent(parentId, studentDetail) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    const body = await buffer(req);
 
     const order = body?.data?.order;
     const paymentStatus = order?.order_status;
