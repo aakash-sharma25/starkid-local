@@ -152,6 +152,15 @@ export async function POST(req) {
       return new Response("Missing required fields", { status: 400 });
     }
 
+    // await sendSms(phone);
+
+    return NextResponse.json(
+      {
+        message: "true",
+      },
+      { status: 200 }
+    );
+
     const studentDetail = {
       userName: childName,
       class: getClassFromAge(age),
@@ -218,4 +227,23 @@ export async function POST(req) {
 
     return new Response("Internal Server Error", { status: 500 });
   }
+}
+
+async function sendSms(phone) {
+  const successMessage = `Hi , your registration is successful! Welcome aboard. - StarKid`;
+
+  // Send SMS using the send-sms API route
+  const smsResponse = await fetch(`/api/send-sms`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      to: phone,
+      message: successMessage,
+    }),
+  });
+
+  const smsResult = await smsResponse.json();
+  console.log(smsResult);
 }
