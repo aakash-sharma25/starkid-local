@@ -12,14 +12,6 @@ import { db } from "@/app/firebaseConfig";
 import { NextResponse } from "next/server";
 import { retryOperation } from "@/utlis/retryHandler";
 import { sendEmail } from "@/utlis/email";
-import crypto from "crypto";
-import { buffer } from "micro";
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 // const result = await sendEmail(data, "registration");
 
@@ -141,7 +133,7 @@ async function createNewUserForExistingParent(parentId, studentDetail) {
 
 export async function POST(req) {
   try {
-    const body = await buffer(req);
+    const body = await req.json();
 
     const order = body?.data?.order;
     const paymentStatus = order?.order_status;
@@ -162,12 +154,12 @@ export async function POST(req) {
 
     // await sendSms(phone);
 
-    return NextResponse.json(
-      {
-        message: "true",
-      },
-      { status: 200 }
-    );
+    // return NextResponse.json(
+    //   {
+    //     message: "true",
+    //   },
+    //   { status: 200 }
+    // );
 
     const studentDetail = {
       userName: childName,
